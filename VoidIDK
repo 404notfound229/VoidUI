@@ -122,6 +122,7 @@ function VoidUI:CreateWindow(cfg)
     tabLayout.FillDirection = Enum.FillDirection.Horizontal
     tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     tabLayout.Padding = UDim.new(0,10)
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- FIX: Added SortOrder
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
@@ -275,11 +276,19 @@ function VoidUI:SetTitleRich(rich)
     end
 end
 
+-- FIX: Define tab order mapping
+local TAB_ORDER = {
+    ["Aim"] = 1,
+    ["Visuals"] = 2,
+    ["Settings"] = 3
+}
+
 function VoidUI:CreateTab(cfg)
     local window = self
     cfg = cfg or {}
     local name = cfg.Name or "Tab"
     local iconSize = cfg.IconSize or 24
+    local order = cfg.Order or TAB_ORDER[name] or 99  -- FIX: Use predefined order or custom order
 
     local textSize = TextService:GetTextSize(name, 14, Enum.Font.GothamBold, Vector2.new(1000,24))
     local width = math.clamp(textSize.X + 18, 52, 140)
@@ -291,6 +300,7 @@ function VoidUI:CreateTab(cfg)
     button.ImageTransparency = 1
     button.ImageColor3 = Color3.fromRGB(180,180,185)
     button.AutoButtonColor = false
+    button.LayoutOrder = order  -- FIX: Set LayoutOrder for proper tab ordering
     button.Parent = window._tabBar
 
     local titleText = Instance.new("TextLabel", button)
@@ -340,7 +350,7 @@ function VoidUI:CreateTab(cfg)
     sectionsLayout.Padding = UDim.new(0,16)
     sectionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    local tab = {_window = window, _button = button, _line = underline, _page = page, _sectionsHolder = sectionsHolder, _accent = window._accent, _name = name}
+    local tab = {_window = window, _button = button, _line = underline, _page = page, _sectionsHolder = sectionsHolder, _accent = window._accent, _name = name, _order = order}
 
     function tab:CreateSection(title)
         local section = {}
@@ -661,7 +671,11 @@ function VoidUI:CreateTab(cfg)
     button.MouseButton1Click:Connect(function() window:SelectTab(tab) end)
 
     table.insert(window._tabs, tab)
-    if not window._selectedTab then window:SelectTab(tab) end
+    
+    -- FIX: Select the first tab by LayoutOrder (lowest order = first)
+    if not window._selectedTab or tab._order < window._selectedTab._order then
+        window:SelectTab(tab)
+    end
 
     return tab
 end
