@@ -1,9 +1,6 @@
 --[[
-    VoidUI Library v1.1
+    VoidUI Library v1.1 FIXED
     GitHub: https://github.com/YOUR_USERNAME/VoidUI
-    
-    Usage:
-    local VoidUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/404notfound229/VoidUI/main/VoidIDK.lua"))()
 ]]
 
 local Players          = game:GetService("Players")
@@ -63,30 +60,30 @@ function VoidUI:SelectTab(tabObj)
     TweenService:Create(tabObj._line, TweenInfo.new(0.18), {Size = UDim2.new(0,20,0,2)}):Play()
 end
 
--- Toggle UI Visibility
+-- FIXED Toggle Function
 function VoidUI:Toggle(visible)
     if visible == nil then
-        visible = not self._main.Visible
-    end
-    
-    if visible then
-        self._main.Visible = true
-        self._main.BackgroundTransparency = 1
-        TweenService:Create(self._main, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-    else
-        TweenService:Create(self._main, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
-        task.delay(0.15, function()
-            if self._main.BackgroundTransparency >= 0.9 then
-                self._main.Visible = false
-            end
-        end)
+        visible = not self._visible
     end
     
     self._visible = visible
+    self._main.Visible = visible
+    
+    if self._watermark then
+        self._watermark.Visible = visible
+    end
 end
 
 function VoidUI:IsVisible()
     return self._visible
+end
+
+function VoidUI:SetToggleKey(keyCode)
+    self._toggleKey = keyCode
+end
+
+function VoidUI:GetToggleKey()
+    return self._toggleKey
 end
 
 function VoidUI:CreateWindow(cfg)
@@ -111,6 +108,7 @@ function VoidUI:CreateWindow(cfg)
     main.Size = size
     main.BackgroundColor3 = Color3.fromRGB(15,15,17)
     main.BorderSizePixel = 0
+    main.Visible = true  -- FIXED: Explicitly set visible
     main.Parent = screenGui
     Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
     local mainStroke = Instance.new("UIStroke", main)
@@ -180,31 +178,26 @@ function VoidUI:CreateWindow(cfg)
     window._tabs = {}
     window._selectedTab = nil
     window._titleLabel = titleLabel
-    window._visible = true
+    window._visible = true  -- FIXED: Start as visible
     window._toggleKey = toggleKey
-    window._keybindCallbacks = {}
 
     makeDraggable(main, topBar)
 
+    -- FIXED: Proper initial animation
     main.BackgroundTransparency = 1
     topBarBG.BackgroundTransparency = 1
-    TweenService:Create(main, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(topBarBG, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
+    
+    task.delay(0.1, function()
+        TweenService:Create(main, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(topBarBG, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
+    end)
 
-    -- Keybind Toggle System
+    -- FIXED: Keybind Toggle System
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
-        -- Check for window toggle
         if input.KeyCode == window._toggleKey then
             window:Toggle()
-        end
-        
-        -- Check for custom keybind callbacks
-        for keyCode, callback in pairs(window._keybindCallbacks) do
-            if input.KeyCode == keyCode then
-                task.spawn(callback)
-            end
         end
     end)
 
@@ -218,6 +211,7 @@ function VoidUI:CreateWindow(cfg)
     wmHolder.BorderSizePixel = 0
     wmHolder.AutomaticSize = Enum.AutomaticSize.XY
     wmHolder.Size = UDim2.new(0,0,0,26)
+    wmHolder.Visible = true  -- FIXED
     wmHolder.Parent = screenGui
 
     Instance.new("UICorner", wmHolder).CornerRadius = UDim.new(0,6)
@@ -274,18 +268,9 @@ function VoidUI:CreateWindow(cfg)
         wmUnderline.Size = UDim2.new(0, wmTitle.TextBounds.X, 0, 2)
     end)
 
-    wmHolder.BackgroundTransparency = 1
-    wmTitle.TextTransparency = 1
-    wmDiv.TextTransparency = 1
-    wmInfo.TextTransparency = 1
-    wmStroke.Transparency = 1
-
-    TweenService:Create(wmHolder, TweenInfo.new(0.22), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(wmStroke, TweenInfo.new(0.22), {Transparency = 0.25}):Play()
-    TweenService:Create(wmTitle, TweenInfo.new(0.18), {TextTransparency = 0}):Play()
-    TweenService:Create(wmDiv, TweenInfo.new(0.18), {TextTransparency = 0}):Play()
-    TweenService:Create(wmInfo, TweenInfo.new(0.18), {TextTransparency = 0}):Play()
-    TweenService:Create(wmUnderline, TweenInfo.new(0.18), {Size = UDim2.new(0, wmTitle.TextBounds.X, 0, 2)}):Play()
+    -- FIXED: Remove initial transparency animation issues
+    wmHolder.BackgroundTransparency = 0
+    wmStroke.Transparency = 0.25
 
     window._watermark = wmHolder
 
@@ -323,15 +308,6 @@ function VoidUI:SetTitleRich(rich)
     end
 end
 
-function VoidUI:SetToggleKey(keyCode)
-    self._toggleKey = keyCode
-end
-
-function VoidUI:GetToggleKey()
-    return self._toggleKey
-end
-
--- FIX: Define tab order mapping
 local TAB_ORDER = {
     ["Aim"] = 1,
     ["Visuals"] = 2,
@@ -528,8 +504,9 @@ function VoidUI:CreateTab(cfg)
             return {Set = function(_, v) toggled = v apply(true) end, Get = function() return toggled end}
         end
 
+        -- KEYBIND ELEMENT
         function section:AddKeybind(text, default, callback)
-            default = default or Enum.KeyCode.Unknown
+            default = default or Enum.KeyCode.Insert
             callback = callback or function() end
 
             local row = Instance.new("Frame", controls)
@@ -579,13 +556,11 @@ function VoidUI:CreateTab(cfg)
                 updateText()
             end)
 
-            local inputConnection
-            inputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 if not listening then return end
                 if input.UserInputType == Enum.UserInputType.Keyboard then
                     listening = false
                     if input.KeyCode == Enum.KeyCode.Escape then
-                        -- Cancel, keep old key
                         updateText()
                     else
                         currentKey = input.KeyCode
