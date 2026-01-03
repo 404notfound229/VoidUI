@@ -1,5 +1,5 @@
 --[[
-    VoidUI Library v1.0
+    VoidUI Library v1.1
     GitHub: https://github.com/YOUR_USERNAME/VoidUI
     
     Usage:
@@ -63,11 +63,38 @@ function VoidUI:SelectTab(tabObj)
     TweenService:Create(tabObj._line, TweenInfo.new(0.18), {Size = UDim2.new(0,20,0,2)}):Play()
 end
 
+-- Toggle UI Visibility
+function VoidUI:Toggle(visible)
+    if visible == nil then
+        visible = not self._main.Visible
+    end
+    
+    if visible then
+        self._main.Visible = true
+        self._main.BackgroundTransparency = 1
+        TweenService:Create(self._main, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    else
+        TweenService:Create(self._main, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+        task.delay(0.15, function()
+            if self._main.BackgroundTransparency >= 0.9 then
+                self._main.Visible = false
+            end
+        end)
+    end
+    
+    self._visible = visible
+end
+
+function VoidUI:IsVisible()
+    return self._visible
+end
+
 function VoidUI:CreateWindow(cfg)
     cfg = cfg or {}
     local title = cfg.Title or "VOID.PP"
     local accentColor = cfg.AccentColor or Color3.fromRGB(0,170,255)
     local size = cfg.Size or UDim2.new(0,720,0,560)
+    local toggleKey = cfg.ToggleKey or Enum.KeyCode.Insert
     local gui = getPlayerGui()
 
     local screenGui = Instance.new("ScreenGui")
@@ -122,7 +149,7 @@ function VoidUI:CreateWindow(cfg)
     tabLayout.FillDirection = Enum.FillDirection.Horizontal
     tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     tabLayout.Padding = UDim.new(0,10)
-    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- FIX: Added SortOrder
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
@@ -153,6 +180,9 @@ function VoidUI:CreateWindow(cfg)
     window._tabs = {}
     window._selectedTab = nil
     window._titleLabel = titleLabel
+    window._visible = true
+    window._toggleKey = toggleKey
+    window._keybindCallbacks = {}
 
     makeDraggable(main, topBar)
 
@@ -160,6 +190,23 @@ function VoidUI:CreateWindow(cfg)
     topBarBG.BackgroundTransparency = 1
     TweenService:Create(main, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
     TweenService:Create(topBarBG, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
+
+    -- Keybind Toggle System
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- Check for window toggle
+        if input.KeyCode == window._toggleKey then
+            window:Toggle()
+        end
+        
+        -- Check for custom keybind callbacks
+        for keyCode, callback in pairs(window._keybindCallbacks) do
+            if input.KeyCode == keyCode then
+                task.spawn(callback)
+            end
+        end
+    end)
 
     -- Watermark
     local username = Players.LocalPlayer and Players.LocalPlayer.Name or "Player"
@@ -276,6 +323,14 @@ function VoidUI:SetTitleRich(rich)
     end
 end
 
+function VoidUI:SetToggleKey(keyCode)
+    self._toggleKey = keyCode
+end
+
+function VoidUI:GetToggleKey()
+    return self._toggleKey
+end
+
 -- FIX: Define tab order mapping
 local TAB_ORDER = {
     ["Aim"] = 1,
@@ -288,7 +343,7 @@ function VoidUI:CreateTab(cfg)
     cfg = cfg or {}
     local name = cfg.Name or "Tab"
     local iconSize = cfg.IconSize or 24
-    local order = cfg.Order or TAB_ORDER[name] or 99  -- FIX: Use predefined order or custom order
+    local order = cfg.Order or TAB_ORDER[name] or 99
 
     local textSize = TextService:GetTextSize(name, 14, Enum.Font.GothamBold, Vector2.new(1000,24))
     local width = math.clamp(textSize.X + 18, 52, 140)
@@ -300,7 +355,7 @@ function VoidUI:CreateTab(cfg)
     button.ImageTransparency = 1
     button.ImageColor3 = Color3.fromRGB(180,180,185)
     button.AutoButtonColor = false
-    button.LayoutOrder = order  -- FIX: Set LayoutOrder for proper tab ordering
+    button.LayoutOrder = order
     button.Parent = window._tabBar
 
     local titleText = Instance.new("TextLabel", button)
@@ -471,6 +526,79 @@ function VoidUI:CreateTab(cfg)
             end)
 
             return {Set = function(_, v) toggled = v apply(true) end, Get = function() return toggled end}
+        end
+
+        function section:AddKeybind(text, default, callback)
+            default = default or Enum.KeyCode.Unknown
+            callback = callback or function() end
+
+            local row = Instance.new("Frame", controls)
+            row.BackgroundTransparency = 1
+            row.Size = UDim2.new(1,0,0,22)
+
+            local label = Instance.new("TextLabel", row)
+            label.BackgroundTransparency = 1
+            label.Size = UDim2.new(1,-80,1,0)
+            label.Font = Enum.Font.GothamMedium
+            label.Text = text
+            label.TextSize = 13
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.TextColor3 = Color3.fromRGB(205,205,210)
+
+            local btn = Instance.new("TextButton", row)
+            btn.AnchorPoint = Vector2.new(1,0.5)
+            btn.Position = UDim2.new(1,0,0.5,0)
+            btn.Size = UDim2.new(0,70,0,20)
+            btn.BackgroundColor3 = Color3.fromRGB(30,32,36)
+            btn.BorderSizePixel = 0
+            btn.Font = Enum.Font.GothamMedium
+            btn.TextSize = 11
+            btn.TextColor3 = Color3.fromRGB(200,200,210)
+            btn.AutoButtonColor = false
+
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0,4)
+
+            local currentKey = default
+            local listening = false
+
+            local function updateText()
+                if listening then
+                    btn.Text = "..."
+                    btn.TextColor3 = window._accent
+                else
+                    local keyName = currentKey.Name or "None"
+                    btn.Text = "[" .. keyName .. "]"
+                    btn.TextColor3 = Color3.fromRGB(200,200,210)
+                end
+            end
+
+            updateText()
+
+            btn.MouseButton1Click:Connect(function()
+                listening = true
+                updateText()
+            end)
+
+            local inputConnection
+            inputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if not listening then return end
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    listening = false
+                    if input.KeyCode == Enum.KeyCode.Escape then
+                        -- Cancel, keep old key
+                        updateText()
+                    else
+                        currentKey = input.KeyCode
+                        updateText()
+                        task.spawn(callback, currentKey)
+                    end
+                end
+            end)
+
+            return {
+                Get = function() return currentKey end, 
+                Set = function(_, v) currentKey = v updateText() task.spawn(callback, currentKey) end
+            }
         end
 
         function section:AddDropdown(text, options, defaultIndex, callback)
@@ -672,7 +800,6 @@ function VoidUI:CreateTab(cfg)
 
     table.insert(window._tabs, tab)
     
-    -- FIX: Select the first tab by LayoutOrder (lowest order = first)
     if not window._selectedTab or tab._order < window._selectedTab._order then
         window:SelectTab(tab)
     end
