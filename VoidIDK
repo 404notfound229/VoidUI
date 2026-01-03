@@ -1,8 +1,18 @@
+
+---
+
+## 📄 src/VoidUI.lua
+
+```lua
 --[[
-    VoidUI Library v1.1 FIXED + FPS BOOST AUTO
-    - FPS Boost запускается автоматически при инжекте
-    - Settings показывает "TO OPEN/CLOSE PRESS INSERT"
-    - Watermark остаётся видимым когда GUI скрыт
+    VoidUI Library v1.1
+    GitHub: https://github.com/YOUR_USERNAME/VoidUI
+    
+    Features:
+    - Auto FPS Boost
+    - Persistent Watermark
+    - Modern UI Design
+    - Easy API
 ]]
 
 local Players          = game:GetService("Players")
@@ -62,7 +72,6 @@ function VoidUI:SelectTab(tabObj)
     TweenService:Create(tabObj._line, TweenInfo.new(0.18), {Size = UDim2.new(0,20,0,2)}):Play()
 end
 
--- FIXED: Watermark остаётся видимым
 function VoidUI:Toggle(visible)
     if visible == nil then
         visible = not self._visible
@@ -70,8 +79,6 @@ function VoidUI:Toggle(visible)
     
     self._visible = visible
     self._main.Visible = visible
-    
-    -- НЕ ТРОГАЕМ WATERMARK
 end
 
 function VoidUI:IsVisible()
@@ -777,81 +784,5 @@ function VoidUI:CreateTab(cfg)
 
     return tab
 end
-
--- ========== AUTO FPS BOOST FUNCTION ==========
-local function EnableFPSBoost()
-    local Lighting = game:GetService("Lighting")
-    local Terrain = workspace:FindFirstChildOfClass("Terrain")
-
-    if Terrain then
-        Terrain.WaterWaveSize = 0
-        Terrain.WaterWaveSpeed = 0
-        Terrain.WaterReflectance = 0
-        Terrain.WaterTransparency = 0
-    end
-
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 100000
-    Lighting.Brightness = 1
-
-    for _, obj in ipairs(Lighting:GetChildren()) do
-        if obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("SunRaysEffect") or obj:IsA("ColorCorrectionEffect") then
-            obj.Enabled = false
-        end
-    end
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.CastShadow = false
-        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-            obj.Enabled = false
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj.Transparency = 0.5
-        end
-    end
-    
-    print("[VOID.PP] FPS Boost enabled automatically")
-end
-
--- ========== EXAMPLE USAGE ==========
-local window = VoidUI:CreateWindow({
-    Title = "VOID.PP",
-    AccentColor = Color3.fromRGB(0,170,255),
-    ToggleKey = Enum.KeyCode.Insert
-})
-
--- AUTO FPS BOOST при инжекте
-EnableFPSBoost()
-
--- AIM TAB
-local aimTab = window:CreateTab({ Name = "Aim" })
-local aimSection = aimTab:CreateSection("Aimbot")
-
-aimSection:AddToggle("Enable Aimbot", false, function(state)
-    print("Aimbot:", state)
-end)
-
-aimSection:AddSlider("FOV", 10, 500, 120, "", function(val)
-    print("FOV:", val)
-end)
-
--- VISUALS TAB
-local visualsTab = window:CreateTab({ Name = "Visuals" })
-local espSection = visualsTab:CreateSection("ESP")
-
-espSection:AddToggle("Enable ESP", false, function(state)
-    print("ESP:", state)
-end)
-
-espSection:AddDropdown("ESP Type", {"Box", "Name", "Health"}, 1, function(val)
-    print("ESP Type:", val)
-end)
-
--- SETTINGS TAB (БЕЗ FPS BOOST FRAME)
-local settingsTab = window:CreateTab({ Name = "Settings" })
-local infoSection = settingsTab:CreateSection("Info")
-
--- СЕРЫЙ ТЕКСТ
-infoSection:AddLabel("TO OPEN/CLOSE PRESS INSERT", Color3.fromRGB(120,120,130))
 
 return VoidUI
