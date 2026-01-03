@@ -1,18 +1,8 @@
-
----
-
-
-
-
 --[[
-    VoidUI Library v1.1
-    GitHub: https://github.com/YOUR_USERNAME/VoidUI
-    
-    Features:
-    - Auto FPS Boost
-    - Persistent Watermark
-    - Modern UI Design
-    - Easy API
+    VoidUI Library v1.1 FIXED
+    - FPS Boost автоматический (БЕЗ UI)
+    - Settings теперь одна секция "GENERAL SETTINGS"
+    - Серый текст под General Settings
 ]]
 
 local Players          = game:GetService("Players")
@@ -784,5 +774,98 @@ function VoidUI:CreateTab(cfg)
 
     return tab
 end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- AUTO FPS BOOST (БЕЗ UI)
+-- ════════════════════════════════════════════════════════════════════════════
+
+local function EnableFPSBoost()
+    local Lighting = game:GetService("Lighting")
+    local Terrain = workspace:FindFirstChildOfClass("Terrain")
+
+    if Terrain then
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterReflectance = 0
+        Terrain.WaterTransparency = 0
+    end
+
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 100000
+    Lighting.Brightness = 1
+
+    for _, obj in ipairs(Lighting:GetChildren()) do
+        if obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("SunRaysEffect") or obj:IsA("ColorCorrectionEffect") then
+            obj.Enabled = false
+        end
+    end
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.CastShadow = false
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = false
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 0.5
+        end
+    end
+    
+    print("[VOID.PP] FPS Boost Auto-Enabled ✓")
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- EXAMPLE USAGE
+-- ════════════════════════════════════════════════════════════════════════════
+
+local window = VoidUI:CreateWindow({
+    Title = "VOID.PP",
+    AccentColor = Color3.fromRGB(0,170,255),
+    ToggleKey = Enum.KeyCode.Insert
+})
+
+-- AUTO FPS BOOST
+EnableFPSBoost()
+
+-- AIM TAB
+local aimTab = window:CreateTab({ Name = "Aim" })
+local aimSection = aimTab:CreateSection("Aimbot")
+
+aimSection:AddToggle("Enable Aimbot", false, function(state)
+    print("Aimbot:", state)
+end)
+
+aimSection:AddSlider("FOV", 10, 500, 120, "°", function(val)
+    print("FOV:", val)
+end)
+
+-- VISUALS TAB
+local visualsTab = window:CreateTab({ Name = "Visuals" })
+local espSection = visualsTab:CreateSection("ESP")
+
+espSection:AddToggle("Enable ESP", false, function(state)
+    print("ESP:", state)
+end)
+
+espSection:AddDropdown("ESP Type", {"Box", "Name", "Health"}, 1, function(val)
+    print("ESP Type:", val)
+end)
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- SETTINGS TAB - ТОЛЬКО "GENERAL SETTINGS" С ТЕКСТОМ ПОД НИМ
+-- ════════════════════════════════════════════════════════════════════════════
+local settingsTab = window:CreateTab({ Name = "Settings" })
+local generalSection = settingsTab:CreateSection("General Settings")
+
+generalSection:SetTitleRich('<font color="#00AFFF">GENERAL</font><font color="#FFFFFF"> SETTINGS</font>')
+
+-- СЕРЫЕ ТЕКСТЫ ПОД ЗАГОЛОВКОМ
+generalSection:AddLabel("TO OPEN/CLOSE PRESS INSERT", Color3.fromRGB(120,120,130))
+generalSection:AddLabel("FPS Boost: Auto-Enabled ✓", Color3.fromRGB(100,200,100))
+generalSection:AddLabel("Version: 1.1", Color3.fromRGB(150,150,160))
+
+-- TOGGLES (ОПЦИОНАЛЬНО)
+generalSection:AddToggle("Show Watermark", true, function(v)
+    if window._watermark then window._watermark.Visible = v end
+end)
 
 return VoidUI
