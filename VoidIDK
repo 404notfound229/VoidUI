@@ -1,4 +1,9 @@
-
+--[[
+    VoidUI Library v1.1 FIXED + FPS BOOST AUTO
+    - FPS Boost запускается автоматически при инжекте
+    - Settings показывает "TO OPEN/CLOSE PRESS INSERT"
+    - Watermark остаётся видимым когда GUI скрыт
+]]
 
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
@@ -804,16 +809,18 @@ local function EnableFPSBoost()
             obj.Transparency = 0.5
         end
     end
+    
+    print("[VOID.PP] FPS Boost enabled automatically")
 end
 
--- ========== READY EXAMPLE ==========
+-- ========== EXAMPLE USAGE ==========
 local window = VoidUI:CreateWindow({
     Title = "VOID.PP",
     AccentColor = Color3.fromRGB(0,170,255),
     ToggleKey = Enum.KeyCode.Insert
 })
 
--- AUTO FPS BOOST
+-- AUTO FPS BOOST при инжекте
 EnableFPSBoost()
 
 -- AIM TAB
@@ -840,7 +847,7 @@ espSection:AddDropdown("ESP Type", {"Box", "Name", "Health"}, 1, function(val)
     print("ESP Type:", val)
 end)
 
--- SETTINGS TAB
+-- SETTINGS TAB (БЕЗ FPS BOOST FRAME)
 local settingsTab = window:CreateTab({ Name = "Settings" })
 local infoSection = settingsTab:CreateSection("Info")
 
